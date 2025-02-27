@@ -1,14 +1,11 @@
 const express = require('express');
 const app = express();
 
-// Define specific routes first
 app.get("/test", (req, res) => {
    res.send('Test  from the server');
 });
 
-app.post("/user", (req, res) => {
-   res.send("post method call");
-});
+ 
 app.delete("/demo", (req, res) => {
    res.send("de method call");
 });
