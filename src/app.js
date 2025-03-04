@@ -3,7 +3,7 @@ const app = express();
 const User = require("./models/user");
 const cookieParser = require("cookie-parser");
 const connectDB = require("./config/database");
-const jwt = require("jsonwebtoken");
+const { userAuth } = require("./middleware/auth");
 app.use(express.json());
 app.use(cookieParser());
 app.post("/signup", async (req, res) => {
@@ -26,76 +26,43 @@ app.post("/login", async (req, res) => {
       return res.status(400).send("Invalid credentials");
     }
     if (user.password === password) {
-      const token = await jwt.sign({_id:user._id},"DEV@TINDER88");
-      res.cookie("token", token);
+      const token = await user.getJWT();
+      res.cookie("token", token
+        , {
+          expires: new Date(Date.now() + 8 * 3600000),
+        }
+      );
       res.send("Login successful");
     }
   } catch (err) {
     res.status(500).send("Error logging in: " + err.message);
   }
 });
-app.get("/profile", async (req, res) => {
+app.get("/profile", userAuth, async (req, res) => {
   try {
-    const cookie = req.cookies; //get cookie
-    const {token} = cookie; 
-    //validate the token  and decode it
-    const decodedMessage = await jwt.verify(token, "DEV@TINDER88");
-    const { _id } = decodedMessage;
-    const user = await User.findById(_id);
+    const user = req.user;
     res.send(user);
   } catch (err) {
     res.status(500).send("Error retrieving the profile: " + err.message);
   }
 });
-app.get("/user", async (req, res) => {
-  try {
-    const user = await User.find({ emailId: req.body.emailId });
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
-    res.send(user);
-  } catch (err) {
-    res.status(500).send("Error retrieving the user: " + err.message);
-  }
-});
-app.delete("/user", async (req, res) => {
-  try {
-    const user = await User.findByIdAndDelete({ _id: req.body.userId });
+app.post("/sendConnectionRequest", userAuth, async (req, res) => {
+  const user = req.user;
+  res.send(user.firstName + "sending a connection request   ")
+})
 
-    res.send('User deleted ');
-  } catch (err) {
-    res.status(500).send("Error retrieving the user: " + err.message);
-  }
-});
-app.patch("/user", async (req, res) => {
-  const userId = req.body.userId;
-  const data = req.body;
-  try {
-    const user = await User.findByIdAndUpdate({ _id: userId }, data);
-    res.send('User updated ');
-  } catch (err) {
-    res.status(500).send("Error retrieving the user: " + err.message);
-  }
-});
-app.get("/feed", async (req, res) => {
-  try {
-    const user = await User.find({});
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
-    res.send(user);
-  } catch (err) {
-    res.status(500).send("Error retrieving the user: " + err.message);
-  }
-});
+
+
+
+
 connectDB()
   .then(() => {
-    console.log('db conneted   ');
+    console.log('database connected   ');
     app.listen(8888, () => {
-      console.log('Server is successfully listening on port 8888...');
+      console.log('Server is listening on port 8888...');
     });
   }).catch((err) => {
-    console.error('db is not connected');
+    console.error('database is not connected');
   });
 
 
